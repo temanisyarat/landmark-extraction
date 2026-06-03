@@ -1,8 +1,8 @@
-# lm-extraction
+# LM — Landmark Extraction
 
-**MediaPipe Holistic Landmark Extraction Pipeline for BISINDO (Bahasa Isyarat Indonesia) Sign Language Recognition**
+**MediaPipe landmark extraction pipeline for BISINDO (Bahasa Isyarat Indonesia) Sign Language Recognition**
 
-This pipeline processes raw sign language video recordings — extracting pose and hand landmarks using [MediaPipe Tasks API](https://developers.google.com/mediapipe/solutions/vision/pose_landmarker) for downstream deep learning classification. Designed for the **BISINDO** (Indonesian Sign Language) dataset with multi-signer, multi-word video recordings.
+Processes raw sign language video recordings — extracting pose and hand landmarks using [MediaPipe Tasks API](https://developers.google.com/mediapipe/solutions/vision/pose_landmarker) for downstream deep learning classification. Designed for the **BISINDO** (Indonesian Sign Language) dataset with multi-signer, multi-word video recordings.
 
 ## Overview
 
@@ -12,25 +12,25 @@ videoset/  ──►  augmentation.sh  ──►  augmented/  ──►  extract
                                                                         (annotated MP4s)
 ```
 
-The pipeline supports **9 signers**, **20 word classes**, and **10 augmentation variants** per source video (1 original + 9 augmented), yielding ~1,800 total samples.
+The pipeline supports **6 signers**, **20 word classes**, and **10 augmentation variants** per source video (1 original + 9 augmented), yielding **1,200 total samples**.
 
 ## Directory Layout
 
 | Path          | Purpose                                         |
 | ------------- | ----------------------------------------------- |
-| `videoset/`   | Raw input videos: `{signer}/{word}/{word}.mp4`  |
-| `augmented/`  | ffmpeg-augmented video variants                 |
-| `data/`       | Extracted landmarks as compressed `.npz` arrays |
-| `landmarked/` | Output videos with landmarks drawn on frames    |
-| `reformated/` | Re-encoded landmark videos (libx264)            |
-| `tasks/`      | MediaPipe model files (`.task`)                 |
-| `analysis/`   | Dataset analytics report and visualizations     |
+| `videoset/{signer}/{word}/` | Raw input videos                                       |
+| `augmented/{signer}/{word}/` | ffmpeg-augmented video variants (10 per source)      |
+| `data/{signer}/{word}/`      | Extracted landmarks as compressed `.npz` arrays       |
+| `landmarked/{signer}/{word}/` | Output videos with landmarks drawn on frames         |
+| `reformated/`                | Re-encoded landmark videos (libx264)                 |
+| `tasks/`                     | MediaPipe model files (`.task`)                      |
+| `analysis/`                  | Dataset analytics report and visualizations          |
 
 ## Requirements
 
 - **Python** ≥ 3.10
 - **ffmpeg** (required for augmentation scripts)
-- Python packages: `opencv-python`, `mediapipe`, `numpy`
+- Python packages: `opencv-python`, `mediapipe`, `numpy`, `seaborn`
 
 ## Installation
 
@@ -88,15 +88,13 @@ python main.py single input.mp4 --out-video output.mp4 --out-npy output.npz
 python main.py batch videos/ --recursive --out-npy-dir data/
 ```
 
-### Additional Options
+### Dataset Analysis
 
 ```bash
-# Dataset analysis and visualization
-python analyze.py
-
-# Convert .npz to TensorFlow TFRecord
-python concat.py batch data/ --out tfrecords/
+./analyze.sh .venv
 ```
+
+Generates an analytics report with visualizations in `analysis/`.
 
 ## Extracted Landmarks
 
@@ -117,25 +115,14 @@ Place model files in `tasks/`:
 
 | Metric | Value |
 |--------|-------|
-| Signers | 8 |
+| Signers | 6 — farras, fredi, ian, ivan, kevin, willi |
 | Word classes | 20 |
-| Total samples | 1,600 (160 original + 1,440 augmented) |
-| Average frames/video | 71.3 (range: 38–125) |
-| Pose NaN rate | 0.05% |
-| Hand NaN rate | 30.46% (H0: 14.86%, H1: 46.06%) |
+| Total samples | 1,200 (120 original + 1,080 augmented) |
+| Average frames/video | 60.2 (range: 34–106) |
+| Pose NaN rate | 0.01% |
+| Hand NaN rate | 11.20% (H0: 1.25%, H1: 21.16%) |
 
 See `analysis/REPORT.md` for the full analytics report.
-
-## TFRecord Conversion
-
-The `concat.py` script converts `.npz` landmarks into TensorFlow TFRecord format for model training:
-
-```bash
-python concat.py single data/signer/word/word_orig.npz --out tfrecords/
-python concat.py batch data/ --out tfrecords/
-```
-
-Sequences are padded/truncated to 100 frames, producing a 261-dimensional feature vector per frame.
 
 ## Project Structure
 
@@ -145,9 +132,11 @@ Sequences are padded/truncated to 100 frames, producing a 261-dimensional featur
 | `extractor.py`    | Core `LandmarkExtractor` class (MediaPipe Tasks API) |
 | `augmentation.sh` | ffmpeg-based video augmentation                      |
 | `extract.sh`      | Batch extraction orchestration                       |
-| `reformat.sh`     | Video re-encoding with libx264                       |
 | `analyze.py`      | Dataset analytics and visualization                  |
-| `Makefile`        | Pipeline automation                                  |
+| `analyze.sh`      | Wrapper script to invoke `analyze.py` via venv       |
+| `reformat.sh`     | Video re-encoding with libx264                       |
+| `Makefile`        | Pipeline automation (`make all`)                     |
+| `to-parallel.md`  | Plan for parallelizing the pipeline with GNU `parallel` |
 
 ## License
 

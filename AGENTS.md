@@ -22,7 +22,8 @@ videoset/ → augmentation.sh → augmented/ → extract.sh → data/ + landmark
 | `reformated/` | Re-encoded landmark videos (libx264) |
 | `tasks/` | MediaPipe `.task` model files |
 | `analysis/` | Analytics report + visualizations |
-| `archive/batch1/` | Snapshot of a previous pipeline run |
+| `archive/batch1/` | Snapshot of the first pipeline run |
+| `archive/batch2/` | Snapshot of the second pipeline run |
 
 ## Key Files
 
@@ -33,7 +34,10 @@ videoset/ → augmentation.sh → augmented/ → extract.sh → data/ + landmark
 | `augmentation.sh` | ffmpeg-based augmentation (speed, flip, shift) |
 | `extract.sh` | Batch extraction orchestration per signer |
 | `analyze.py` | Dataset analytics → `analysis/REPORT.md` |
+| `analyze.sh` | Wrapper script to invoke `analyze.py` via venv |
 | `reformat.sh` | Re-encode to libx264 for compatibility |
+| `Makefile` | Pipeline automation (`make all`) |
+| `to-parallel.md` | Plan for parallelizing with GNU `parallel` |
 
 ## Extracted Landmarks
 
@@ -59,4 +63,11 @@ Indices defined in `extractor.py` as `POSE_UPPER_IDX = [0, 11, 12, 13, 14, 15, 1
 
 ## TFRecord Conversion
 
-The README references `concat.py` (not in repo) for converting `.npz` → TFRecord. Sequences padded/truncated to 100 frames, 261-dim feature vector per frame.
+`concat.py` (not yet in repo) for converting `.npz` → TFRecord. Sequences padded/truncated to 100 frames, 261-dim feature vector per frame.
+
+## Archived Pipeline Runs
+
+| Archive | Contents |
+|---------|----------|
+| `archive/batch1/` | Full pipeline output (videoset, augmented, data, landmarked, reformated, analysis) |
+| `archive/batch2/` | Later run (augmented, data, landmarked, analysis) |
