@@ -136,7 +136,6 @@ See `analysis/REPORT.md` for the full analytics report.
 | `analyze.sh`      | Wrapper script to invoke `analyze.py` via venv       |
 | `reformat.sh`     | Video re-encoding with libx264                       |
 | `Makefile`        | Pipeline automation (`make all`)                     |
-| `to-parallel.md`  | Plan for parallelizing the pipeline with GNU `parallel` |
 
 ## License
 
