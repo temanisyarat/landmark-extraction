@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import matplotlib
@@ -23,85 +24,69 @@ OUT_DIR = Path("analysis")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 SIGNERS = sorted(d.name for d in DATA_DIR.iterdir() if d.is_dir())
-WORDS = [
-    "aku",
-    "apel",
-    "ayah",
-    "besok",
-    "buku",
-    "dia",
-    "dua",
-    "hari ini",
-    "ibu",
-    "kamu",
-    "kuning",
-    "maaf",
-    "merah",
-    "nama",
-    "pisang",
-    "salam",
-    "satu",
-    "teman",
-    "terima kasih",
-    "tiga",
-]
-VARIANTS = [
-    "orig",
-    "fast",
-    "slow",
-    "hflip",
-    "shift_left",
-    "shift_right",
-    "hflip_fast",
-    "hflip_slow",
-    "hflip_shift_left",
-    "hflip_shift_right",
-]
+
+
+def _parse_stem(word_dir: str, stem: str) -> str:
+    """Extract variant name from filename stem."""
+    prefix = word_dir + "_"
+    if stem.startswith(prefix):
+        return stem[len(prefix):]
+    parts = stem.rsplit("_", 1)
+    return parts[-1] if len(parts) > 1 else "unknown"
+
+
+def _analyze_one(fpath: Path) -> dict | None:
+    try:
+        data = np.load(fpath)
+        pose = data["pose"]
+        hands = data["hands"]
+        T = pose.shape[0]
+
+        word_dir = fpath.parent.name
+        stem = fpath.stem
+        variant = _parse_stem(word_dir, stem)
+
+        pose_nan = np.isnan(pose[..., :3]).mean()
+        hands_nan = np.isnan(hands).mean()
+        hand0_nan = np.isnan(hands[:, 0]).mean()
+        hand1_nan = np.isnan(hands[:, 1]).mean()
+        pose_vis_mean = (
+            pose[..., 3][~np.isnan(pose[..., 3])].mean()
+            if (~np.isnan(pose[..., 3])).any()
+            else 0.0
+        )
+
+        return {
+            "signer": fpath.parent.parent.name,
+            "word": word_dir,
+            "variant": variant,
+            "frames": T,
+            "pose_nan": pose_nan,
+            "hands_nan": hands_nan,
+            "hand0_nan": hand0_nan,
+            "hand1_nan": hand1_nan,
+            "pose_vis_mean": pose_vis_mean,
+        }
+    except Exception as exc:
+        logger.warning("FAILED %s: %s", fpath, exc)
+        return None
+
 
 # ---------------------------------------------------------------------------
-# 1. Collect all metadata
+# 1. Collect all metadata (parallel)
 # ---------------------------------------------------------------------------
-records = []
+all_npz = sorted(Path(DATA_DIR).rglob("*.npz"))
+records: list[dict] = []
 
-for signer in SIGNERS:
-    for word in WORDS:
-        wd = DATA_DIR / signer / word
-        if not wd.is_dir():
-            continue
-        for var in VARIANTS:
-            fname = f"{word}_{var}.npz"
-            fpath = wd / fname
-            if not fpath.exists():
-                continue
-            data = np.load(fpath)
-            pose = data["pose"]  # [T, 9, 4]
-            hands = data["hands"]  # [T, 2, 21, 3]
-            T = pose.shape[0]
+with ProcessPoolExecutor(max_workers=8) as pool:
+    futures = {pool.submit(_analyze_one, p): p for p in all_npz}
+    for f in as_completed(futures):
+        result = f.result()
+        if result is not None:
+            records.append(result)
 
-            pose_nan = np.isnan(pose[..., :3]).mean()
-            hands_nan = np.isnan(hands).mean()
-            hand0_nan = np.isnan(hands[:, 0]).mean()
-            hand1_nan = np.isnan(hands[:, 1]).mean()
-            pose_vis_mean = (
-                pose[..., 3][~np.isnan(pose[..., 3])].mean()
-                if (~np.isnan(pose[..., 3])).any()
-                else 0.0
-            )
-
-            records.append(
-                {
-                    "signer": signer,
-                    "word": word,
-                    "variant": var,
-                    "frames": T,
-                    "pose_nan": pose_nan,
-                    "hands_nan": hands_nan,
-                    "hand0_nan": hand0_nan,
-                    "hand1_nan": hand1_nan,
-                    "pose_vis_mean": pose_vis_mean,
-                }
-            )
-
+WORDS = sorted({r["word"] for r in records})
+VARIANTS = sorted({r["variant"] for r in records})
 n_total = len(records)
 logger.info("Total records: %d", n_total)
 

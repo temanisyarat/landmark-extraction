@@ -15,8 +15,8 @@ augment: venv
 extract: augment
 	./extract.sh $(VENV_DIR)
 
-analze: extract
+analyze:
 	./analyze.sh $(VENV_DIR)
 
-reformat: extract
+reformat: extract 
 	./reformat.sh
