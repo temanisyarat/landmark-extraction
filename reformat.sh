@@ -2,7 +2,7 @@
 
 shopt -s nullglob
 # Modify based on signer folders
-SIGNER=(willi farras ivan ian hani mutia fredi saidah)
+SIGNER=(willi farras ivan ian fredi kevin)
 
 for S in "${SIGNER[@]}"; do
   INPUT_DIR="./landmarked/$S"

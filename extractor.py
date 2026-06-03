@@ -85,15 +85,15 @@ class ExtractorConfig:
 
     # Pose
     num_poses: int = 1
-    pose_detection_conf: float = 0.5
-    pose_presence_conf: float = 0.5
-    pose_tracking_conf: float = 0.5
+    pose_detection_conf: float = 0.3
+    pose_presence_conf: float = 0.3
+    pose_tracking_conf: float = 0.3
 
     # Hand
     num_hands: int = 2
-    hand_detection_conf: float = 0.5
-    hand_presence_conf: float = 0.5
-    hand_tracking_conf: float = 0.5
+    hand_detection_conf: float = 0.3
+    hand_presence_conf: float = 0.3
+    hand_tracking_conf: float = 0.3
 
     # Drawing toggles
     draw_pose: bool = True
