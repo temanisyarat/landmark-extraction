@@ -1,8 +1,8 @@
-.PHONY: all venv augment extract
+.PHONY: all venv augment extract analyze reformat
 
 VENV_DIR = .venv
 
-all: venv augment extract
+all: venv augment extract analyze
 
 venv:
 	python -m venv $(VENV_DIR)
@@ -14,3 +14,9 @@ augment: venv
 
 extract: augment
 	./extract.sh $(VENV_DIR)
+
+analze: extract
+	./analyze.sh $(VENV_DIR)
+
+reformat: extract
+	./reformat.sh

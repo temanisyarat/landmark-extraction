@@ -2,7 +2,7 @@
 
 shopt -s nullglob
 # Modify based on signer folders
-SIGNER=(willi farras ivan ian hani mutia fredi saidah)
+SIGNER=(willi farras ivan ian fredi kevin)
 
 for S in "${SIGNER[@]}"; do
   INPUT_DIR="./videoset/$S"
@@ -36,47 +36,47 @@ for S in "${SIGNER[@]}"; do
 
       # 1. Slow down 20%
       ffmpeg -y -i "$VIDEO" \
-        -vf "setpts=1.2*PTS" \
+        -vf "setpts=1.2*PTS" -an \
         "$OUTPUT_DIR/$LABEL/${BASENAME}_slow.mp4"
 
       # 2. Speed up 20%
       ffmpeg -y -i "$VIDEO" \
-        -vf "setpts=0.8*PTS" \
+        -vf "setpts=0.8*PTS" -an \
         "$OUTPUT_DIR/$LABEL/${BASENAME}_fast.mp4"
 
       # 3. shift left (no stretch)
       ffmpeg -y -i "$VIDEO" \
-        -vf "pad='2*round(iw*1.1/2)':ih:0:0,crop=iw:ih:'2*round(iw*1.1/2)-iw':0" \
+        -vf "pad='2*round(iw*1.1/2)':ih:0:0,crop=iw:ih:'2*round(iw*1.1/2)-iw':0" -an \
         "$OUTPUT_DIR/$LABEL/${BASENAME}_shift_left.mp4"
 
       # 4. shift right (no stretch)
       ffmpeg -y -i "$VIDEO" \
-        -vf "pad='2*round(iw*1.1/2)':ih:'2*round(iw*1.1/2)-iw':0,crop=iw:ih:0:0" \
+        -vf "pad='2*round(iw*1.1/2)':ih:'2*round(iw*1.1/2)-iw':0,crop=iw:ih:0:0" -an \
         "$OUTPUT_DIR/$LABEL/${BASENAME}_shift_right.mp4"
 
       # 5. Horizontal Flip
       ffmpeg -y -i "$VIDEO" \
-        -vf "hflip" \
+        -vf "hflip" -an \
         "$OUTPUT_DIR/$LABEL/${BASENAME}_hflip.mp4"
 
       # 6. Horizontal Flip + Slow down
       ffmpeg -y -i "$VIDEO" \
-        -vf "hflip,setpts=1.2*PTS" \
+        -vf "hflip,setpts=1.2*PTS" -an \
         "$OUTPUT_DIR/$LABEL/${BASENAME}_hflip_slow.mp4"
 
       # 7. Horizontal Flip + Speed up
       ffmpeg -y -i "$VIDEO" \
-        -vf "hflip,setpts=0.8*PTS" \
+        -vf "hflip,setpts=0.8*PTS" -an \
         "$OUTPUT_DIR/$LABEL/${BASENAME}_hflip_fast.mp4"
 
       # 8. Hflip + shift left (no stretch)
       ffmpeg -y -i "$VIDEO" \
-        -vf "hflip,pad='2*round(iw*1.1/2)':ih:0:0,crop=iw:ih:'2*round(iw*1.1/2)-iw':0" \
+        -vf "hflip,pad='2*round(iw*1.1/2)':ih:0:0,crop=iw:ih:'2*round(iw*1.1/2)-iw':0" -an \
         "$OUTPUT_DIR/$LABEL/${BASENAME}_hflip_shift_left.mp4"
 
       # 9. Hflip + shift right (no stretch)
       ffmpeg -y -i "$VIDEO" \
-        -vf "hflip,pad='2*round(iw*1.1/2)':ih:'2*round(iw*1.1/2)-iw':0,crop=iw:ih:0:0" \
+        -vf "hflip,pad='2*round(iw*1.1/2)':ih:'2*round(iw*1.1/2)-iw':0,crop=iw:ih:0:0" -an \
         "$OUTPUT_DIR/$LABEL/${BASENAME}_hflip_shift_right.mp4"
     done
   done
