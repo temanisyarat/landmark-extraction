@@ -5,28 +5,26 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT_DIR"
 
 venv="$1"
+export ROOT_DIR venv
 
-# Modify based on signer folders
-SIGNER=(willi farras ivan ian fredi kevin)
+extract_one_label() {
+  local dir="$1"
+  local signer label
 
-for s in "${SIGNER[@]}"; do
-  INPUT_DIR="./augmented/$s"
-  OUTPUT_NPZ_DIR="./data/$s"
-  OUTPUT_VIDEO_DIR="./landmarked/$s"
+  signer=$(basename "$(dirname "$dir")")
+  label=$(basename "$dir")
 
-  mkdir -p "$OUTPUT_NPZ_DIR"
-  mkdir -p "$OUTPUT_VIDEO_DIR"
+  mkdir -p "$ROOT_DIR/data/$signer/$label" \
+           "$ROOT_DIR/landmarked/$signer/$label"
 
-  for LABEL_PATH in "$INPUT_DIR"/*/; do
-    LABEL=$(basename "$LABEL_PATH")
+  "$ROOT_DIR/$venv/bin/python" "$ROOT_DIR/main.py" batch \
+    "$ROOT_DIR/augmented/$signer/$label" \
+    --out-npy-dir "$ROOT_DIR/data/$signer/$label" \
+    --out-video-dir "$ROOT_DIR/landmarked/$signer/$label"
+}
+export -f extract_one_label
 
-    mkdir -p "$OUTPUT_NPZ_DIR/$LABEL"
-    mkdir -p "$OUTPUT_VIDEO_DIR/$LABEL"
-
-    echo "Processing videos in $LABEL_PATH..."
-
-    "$venv"/bin/python main.py batch "$LABEL_PATH" --out-npy-dir "$OUTPUT_NPZ_DIR/$LABEL" --out-video-dir "$OUTPUT_VIDEO_DIR/$LABEL"
-  done
-done
+find ./augmented -mindepth 2 -maxdepth 2 -type d -print0 \
+  | parallel -0 -j "$(nproc)" --bar extract_one_label {}
 
 echo "All signer subdirectories processed."

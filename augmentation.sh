@@ -1,85 +1,61 @@
 #!/bin/bash
 
 shopt -s nullglob
-# Modify based on signer folders
-SIGNER=(willi farras ivan ian fredi kevin)
 
-for S in "${SIGNER[@]}"; do
-  INPUT_DIR="./videoset/$S"
-  OUTPUT_DIR="./augmented/$S"
+augment_one() {
+  local video="$1"
+  local dir signer label basename outdir
 
-  mkdir -p "$OUTPUT_DIR"
+  dir=$(dirname "$video")
+  label=$(basename "$dir")
+  dir=$(dirname "$dir")
+  signer=$(basename "$dir")
+  basename=$(basename "$video" .mp4)
+  outdir="./augmented/$signer/$label"
 
-  for LABEL_PATH in "$INPUT_DIR"/*/; do
-    LABEL=$(basename "$LABEL_PATH")
+  mkdir -p "$outdir"
 
-    mkdir -p "$OUTPUT_DIR/$LABEL"
+  cp "$video" "$outdir/${basename}_orig.mp4"
 
-    # 9 augmentations per video:
-    #   1. Slow down 20%
-    #   2. Speed up 20%
-    #   3. Shift left 10%
-    #   4. Shift right 10%
-    #   5. Horizontal Flip
-    #   6. HFlip + Slow
-    #   7. HFlip + Fast
-    #   8. HFlip + Shift left
-    #   9. HFlip + Shift right
+  ffmpeg -y -i "$video" \
+    -vf "setpts=1.2*PTS" -an \
+    "$outdir/${basename}_slow.mp4" < /dev/null
 
-    for VIDEO in "$LABEL_PATH"*.mp4; do
-      BASENAME=$(basename "$VIDEO" .mp4)
+  ffmpeg -y -i "$video" \
+    -vf "setpts=0.8*PTS" -an \
+    "$outdir/${basename}_fast.mp4" < /dev/null
 
-      echo "Processing $VIDEO..."
+  ffmpeg -y -i "$video" \
+    -vf "pad='2*round(iw*1.1/2)':ih:0:0,crop=iw:ih:'2*round(iw*1.1/2)-iw':0" -an \
+    "$outdir/${basename}_shift_left.mp4" < /dev/null
 
-      # 0. Copy original video
-      cp "$VIDEO" "$OUTPUT_DIR/$LABEL/${BASENAME}_orig.mp4"
+  ffmpeg -y -i "$video" \
+    -vf "pad='2*round(iw*1.1/2)':ih:'2*round(iw*1.1/2)-iw':0,crop=iw:ih:0:0" -an \
+    "$outdir/${basename}_shift_right.mp4" < /dev/null
 
-      # 1. Slow down 20%
-      ffmpeg -y -i "$VIDEO" \
-        -vf "setpts=1.2*PTS" -an \
-        "$OUTPUT_DIR/$LABEL/${BASENAME}_slow.mp4"
+  ffmpeg -y -i "$video" \
+    -vf "hflip" -an \
+    "$outdir/${basename}_hflip.mp4" < /dev/null
 
-      # 2. Speed up 20%
-      ffmpeg -y -i "$VIDEO" \
-        -vf "setpts=0.8*PTS" -an \
-        "$OUTPUT_DIR/$LABEL/${BASENAME}_fast.mp4"
+  ffmpeg -y -i "$video" \
+    -vf "hflip,setpts=1.2*PTS" -an \
+    "$outdir/${basename}_hflip_slow.mp4" < /dev/null
 
-      # 3. shift left (no stretch)
-      ffmpeg -y -i "$VIDEO" \
-        -vf "pad='2*round(iw*1.1/2)':ih:0:0,crop=iw:ih:'2*round(iw*1.1/2)-iw':0" -an \
-        "$OUTPUT_DIR/$LABEL/${BASENAME}_shift_left.mp4"
+  ffmpeg -y -i "$video" \
+    -vf "hflip,setpts=0.8*PTS" -an \
+    "$outdir/${basename}_hflip_fast.mp4" < /dev/null
 
-      # 4. shift right (no stretch)
-      ffmpeg -y -i "$VIDEO" \
-        -vf "pad='2*round(iw*1.1/2)':ih:'2*round(iw*1.1/2)-iw':0,crop=iw:ih:0:0" -an \
-        "$OUTPUT_DIR/$LABEL/${BASENAME}_shift_right.mp4"
+  ffmpeg -y -i "$video" \
+    -vf "hflip,pad='2*round(iw*1.1/2)':ih:0:0,crop=iw:ih:'2*round(iw*1.1/2)-iw':0" -an \
+    "$outdir/${basename}_hflip_shift_left.mp4" < /dev/null
 
-      # 5. Horizontal Flip
-      ffmpeg -y -i "$VIDEO" \
-        -vf "hflip" -an \
-        "$OUTPUT_DIR/$LABEL/${BASENAME}_hflip.mp4"
+  ffmpeg -y -i "$video" \
+    -vf "hflip,pad='2*round(iw*1.1/2)':ih:'2*round(iw*1.1/2)-iw':0,crop=iw:ih:0:0" -an \
+    "$outdir/${basename}_hflip_shift_right.mp4" < /dev/null
+}
+export -f augment_one
 
-      # 6. Horizontal Flip + Slow down
-      ffmpeg -y -i "$VIDEO" \
-        -vf "hflip,setpts=1.2*PTS" -an \
-        "$OUTPUT_DIR/$LABEL/${BASENAME}_hflip_slow.mp4"
-
-      # 7. Horizontal Flip + Speed up
-      ffmpeg -y -i "$VIDEO" \
-        -vf "hflip,setpts=0.8*PTS" -an \
-        "$OUTPUT_DIR/$LABEL/${BASENAME}_hflip_fast.mp4"
-
-      # 8. Hflip + shift left (no stretch)
-      ffmpeg -y -i "$VIDEO" \
-        -vf "hflip,pad='2*round(iw*1.1/2)':ih:0:0,crop=iw:ih:'2*round(iw*1.1/2)-iw':0" -an \
-        "$OUTPUT_DIR/$LABEL/${BASENAME}_hflip_shift_left.mp4"
-
-      # 9. Hflip + shift right (no stretch)
-      ffmpeg -y -i "$VIDEO" \
-        -vf "hflip,pad='2*round(iw*1.1/2)':ih:'2*round(iw*1.1/2)-iw':0,crop=iw:ih:0:0" -an \
-        "$OUTPUT_DIR/$LABEL/${BASENAME}_hflip_shift_right.mp4"
-    done
-  done
-done
+find ./videoset -name '*.mp4' -type f -print0 \
+  | parallel -0 -j "$(nproc)" --bar augment_one {}
 
 echo "Augmentasi selesai."
