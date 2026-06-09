@@ -2,29 +2,28 @@
 
 shopt -s nullglob
 # Modify based on signer folders
-SIGNER=(willi farras ivan ian fredi kevin)
 
-for S in "${SIGNER[@]}"; do
-  INPUT_DIR="./landmarked/$S"
-  OUTPUT_DIR="./reformated/$S"
+reformat_one() {
+  local video="$1"
+  local dir signer label basename outdir
 
-  mkdir -p "$OUTPUT_DIR"
+  dir=$(dirname "$video")
+  label=$(basename "$dir")
+  dir=$(dirname "$dir")
+  signer=$(basename "$dir")
+  basename=$(basename "$video" .mp4)
+  outdir="./reformated/$signer/$label"
 
-  for LABEL_PATH in "$INPUT_DIR"/*/; do
-    LABEL=$(basename "$LABEL_PATH")
+  mkdir -p "$outdir"
 
-    mkdir -p "$OUTPUT_DIR/$LABEL"
+  ffmpeg -y -i "$video" \
+    -c:v libx264 \
+    "$outdir/${basename}_reformated.mp4" </dev/null
 
-    for VIDEO in "$LABEL_PATH"*.mp4; do
-      BASENAME=$(basename "$VIDEO" .mp4)
+}
+export -f reformat_one
 
-      echo "Processing $VIDEO..."
-
-      ffmpeg -y -i "$VIDEO" \
-        -c:v libx264 \
-        "$OUTPUT_DIR/$LABEL/${BASENAME}_reformated.mp4"
-    done
-  done
-done
+find ./landmarked -name '*.mp4' -type f -print0 |
+  parallel -0 -j "$(nproc)" --bar reformat_one {}
 
 echo "Reformat selesai."
