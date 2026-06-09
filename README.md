@@ -111,19 +111,6 @@ Place model files in `tasks/`:
 - `hand_landmarker.task` — Hand landmark model
 - `face_landmarker.task` — Face landmark model (available but not extracted by default)
 
-## Dataset Statistics
-
-| Metric | Value |
-|--------|-------|
-| Signers | 6 — farras, fredi, ian, ivan, kevin, willi |
-| Word classes | 20 |
-| Total samples | 1,200 (120 original + 1,080 augmented) |
-| Average frames/video | 60.2 (range: 34–106) |
-| Pose NaN rate | 0.01% |
-| Hand NaN rate | 11.20% (H0: 1.25%, H1: 21.16%) |
-
-See `analysis/REPORT.md` for the full analytics report.
-
 ## Project Structure
 
 | File              | Purpose                                              |
