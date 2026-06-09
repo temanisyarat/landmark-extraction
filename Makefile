@@ -2,7 +2,7 @@
 
 VENV_DIR = .venv
 
-all: venv augment extract analyze
+all: venv augment extract analyze reformat
 
 venv:
 	python -m venv $(VENV_DIR)
@@ -12,11 +12,11 @@ venv:
 augment: venv
 	./augmentation.sh
 
-extract: augment
+extract: venv 
 	./extract.sh $(VENV_DIR)
 
-analyze:
+analyze: venv 
 	./analyze.sh $(VENV_DIR)
 
-reformat: extract 
+reformat:
 	./reformat.sh
